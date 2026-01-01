@@ -20,6 +20,16 @@ export function PWAInstallPrompt() {
         console.log("[v0] Showing PWA prompt after login")
         setShowPrompt(true)
         setShowPostLoginPrompt(false)
+      } else {
+        // Show prompt daily if not dismissed recently
+        const lastShown = localStorage.getItem("pwa-prompt-last-shown")
+        const today = new Date().toDateString()
+
+        if (!lastShown || lastShown !== today) {
+          console.log("[v0] Showing daily PWA prompt")
+          setShowPrompt(true)
+          localStorage.setItem("pwa-prompt-last-shown", today)
+        }
       }
     }
   }, [isInstallable, isInstalled, dismissed, showPostLoginPrompt, setShowPostLoginPrompt])
@@ -34,16 +44,18 @@ export function PWAInstallPrompt() {
   const handleDismiss = () => {
     setShowPrompt(false)
     setDismissed(true)
-    // Remember dismissal for 7 days
+    // Remember dismissal for 3 days
     localStorage.setItem("pwa-prompt-dismissed", Date.now().toString())
+    // Clear last shown date so it can show again after dismissal period
+    localStorage.removeItem("pwa-prompt-last-shown")
   }
 
   useEffect(() => {
-    // Check if user dismissed prompt recently
+    // Check if user dismissed prompt recently (3 days instead of 7)
     const dismissedTime = localStorage.getItem("pwa-prompt-dismissed")
     if (dismissedTime) {
       const daysSinceDismissed = (Date.now() - Number.parseInt(dismissedTime)) / (1000 * 60 * 60 * 24)
-      if (daysSinceDismissed < 7) {
+      if (daysSinceDismissed < 3) {
         setDismissed(true)
       }
     }
