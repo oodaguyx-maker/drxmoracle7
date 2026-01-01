@@ -16,17 +16,25 @@ let auth: Auth | null = null
 
 try {
   if (typeof window !== "undefined") {
-    app = getApps().length ? getApp() : initializeApp(firebaseConfig)
-    auth = getAuth(app)
+    // Check if Firebase SDK is available
+    if (typeof window.firebase !== "undefined" || typeof (window as any).firebase !== "undefined") {
+      app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+      auth = getAuth(app)
 
-    setPersistence(auth, browserLocalPersistence).catch((error) => {
-      console.error("[v0] Firebase persistence error:", error)
-    })
+      setPersistence(auth, browserLocalPersistence).catch((error) => {
+        console.error("[v0] Firebase persistence error:", error)
+      })
+
+      console.log("[v0] Firebase initialized successfully")
+    } else {
+      console.warn("[v0] Firebase SDK not loaded, authentication will not work")
+    }
   } else {
     console.log("[v0] Skipping Firebase initialization on server")
   }
 } catch (error) {
   console.error("[v0] Firebase initialization error:", error)
+  console.log("[v0] Continuing without Firebase authentication")
 }
 
 export { auth, app }

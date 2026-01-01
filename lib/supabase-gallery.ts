@@ -42,8 +42,24 @@ export async function addGalleryItem(
     const userId = await getFirebaseUserId()
 
     if (!userId) {
-      console.warn("[v0] No user ID available for gallery item")
-      return null
+      console.warn("[v0] No user ID available for gallery item - attempting anonymous insert")
+      // Try anonymous insert (may fail due to RLS policies)
+      const { data, error } = await supabase
+        .from("character_gallery")
+        .insert({
+          character_id: characterId,
+          embed_code: embedCode,
+          media_type: mediaType,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("[v0] Error adding gallery item anonymously:", error)
+        return null
+      }
+
+      return data
     }
 
     const { data, error } = await supabase
@@ -75,8 +91,20 @@ export async function getGalleryItems(characterId: string): Promise<GalleryItem[
     const userId = await getFirebaseUserId()
 
     if (!userId) {
-      console.warn("[v0] No user ID available for fetching gallery items")
-      return []
+      console.warn("[v0] No user ID available for fetching gallery items - using anonymous access")
+      // Try to fetch without user filter for anonymous access
+      const { data, error } = await supabase
+        .from("character_gallery")
+        .select("*")
+        .eq("character_id", characterId)
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("[v0] Error fetching gallery items anonymously:", error)
+        return []
+      }
+
+      return data || []
     }
 
     const { data, error } = await supabase
